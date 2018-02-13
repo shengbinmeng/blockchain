@@ -292,7 +292,9 @@ if __name__ == '__main__':
 
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    parser.add_argument('-n', '--node', default="default_node_id", type=str, help='id of this node')
     args = parser.parse_args()
     port = args.port
-
+    node_identifier = args.node
+    print("node id: " + node_identifier)
     app.run(host='0.0.0.0', port=port)
