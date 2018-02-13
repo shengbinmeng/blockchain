@@ -279,6 +279,14 @@ def consensus():
     return jsonify(response), 200
 
 
+# The index page for convenience.
+@app.route('/', methods=['GET'])
+def index():
+    response = "<p><a href='/chain'>chain</a></p>" + \
+               "<p><a href='/mine'>mine</a></p>" + \
+               "<p><a href='/nodes/resolve'>nodes/resolve</a></p>"
+    return response, 200
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
