@@ -1,35 +1,19 @@
-from block import Block
+from chain import Chain
+from block import Block, create_first_block
 from flask import Flask
-from block import create_first_block
 
-import os
 import json
 import datetime as date
 import hashlib
 
 node = Flask(__name__)
-
-def sync():
-    node_blocks = []
-    # We're assuming that the folder and at least initial block exists
-    chaindata_dir = 'chaindata'
-    if os.path.exists(chaindata_dir):
-        for filename in os.listdir(chaindata_dir):
-            if filename.endswith('.json'):
-                filepath = '%s/%s' % (chaindata_dir, filename)
-                with open(filepath, 'r') as block_file:
-                    block_info = json.load(block_file)
-                    block_object = Block(block_info)
-                    node_blocks.append(block_object)
-    return node_blocks
-
+local_chain = Chain([])
+local_chain.load()
 
 NUM_ZEROS = 2
 
-
 def generate_header(index, prev_hash, data, timestamp, nonce):
     return str(index) + prev_hash + data + str(timestamp) + str(nonce)
-
 
 def calculate_hash(index, prev_hash, data, timestamp, nonce):
     header_string = generate_header(index, prev_hash, data, timestamp, nonce)
@@ -62,26 +46,23 @@ def mine_from(last_block):
 
 @node.route('/chain', methods=['GET'])
 def chain():
-    node_blocks = sync()  # update if they've changed
-    # Convert our blocks into dictionaries
-    # so we can send them as json objects later
     python_blocks = []
-    for block in node_blocks:
-        python_blocks.append(block.__dict__())
+    for block in local_chain.blocks:
+        python_blocks.append(block.to_dict())
     json_blocks = json.dumps(python_blocks)
     return json_blocks
 
 
 @node.route('/mine', methods=['GET'])
 def mine():
-    node_blocks = sync()  # gather last node
-    if len(node_blocks) == 0:
+    if len(local_chain.blocks) == 0:
         # The chain is empty.
         new_block = create_first_block()
     else:
-        new_block = mine_from(node_blocks[-1])
+        new_block = mine_from(local_chain.blocks[-1])
     new_block.self_save()
-    return json.dumps(new_block.__dict__())
+    local_chain.add_block(new_block)
+    return json.dumps(new_block.to_dict())
 
 # The index page for convenience.
 @node.route('/', methods=['GET'])
