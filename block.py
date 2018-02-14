@@ -3,14 +3,19 @@ import os
 import json
 import datetime as date
 
+NUM_ZEROS = 2
+BLOCK_VAR_CONVERSIONS = {'index': int, 'nonce': int, 'hash': str, 'prev_hash': str, 'timestamp': str}
 
 class Block(object):
     def __init__(self, dictionary):
         '''
           We're looking for index, timestamp, data, prev_hash, nonce
         '''
-        for k, v in dictionary.items():
-            setattr(self, k, v)
+        for key, value in dictionary.items():
+            if key in BLOCK_VAR_CONVERSIONS:
+                setattr(self, key, BLOCK_VAR_CONVERSIONS[key](value))
+            else:
+                setattr(self, key, value)
 
         if not hasattr(self, 'nonce'):
             # we're throwin this in for generation
@@ -50,6 +55,13 @@ class Block(object):
         info['data'] = str(self.data)
         info['nonce'] = str(self.nonce)
         return info
+
+    def is_valid(self):
+        self.update_self_hash()
+        if str(self.hash[0:NUM_ZEROS]) == '0' * NUM_ZEROS:
+            return True
+        else:
+            return False
 
     def __str__(self):
         return "Block<prev_hash: %s,hash: %s>" % (self.prev_hash, self.hash)
