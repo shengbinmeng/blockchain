@@ -5,6 +5,8 @@ import datetime as date
 
 NUM_ZEROS = 2
 BLOCK_VAR_CONVERSIONS = {'index': int, 'nonce': int, 'hash': str, 'prev_hash': str, 'timestamp': str}
+CHAINDATA_DIR = 'chaindata'
+
 
 class Block(object):
     def __init__(self, dictionary):
@@ -23,26 +25,22 @@ class Block(object):
         if not hasattr(self, 'hash'):  # in creating the first block, needs to be removed in future
             self.hash = self.update_self_hash()
 
-    def header_string(self):
+    def generate_header(self):
         return str(self.index) + self.prev_hash + self.data + str(self.timestamp) + str(self.nonce)
-
-    def generate_header(index, prev_hash, data, timestamp, nonce):
-        return str(index) + prev_hash + data + str(timestamp) + str(nonce)
 
     def update_self_hash(self):
         sha = hashlib.sha256()
-        sha.update(self.header_string().encode())
+        sha.update(self.generate_header().encode())
         new_hash = sha.hexdigest()
         self.hash = new_hash
         return new_hash
 
     def self_save(self):
-        chaindata_dir = 'chaindata'
-        if not os.path.exists(chaindata_dir):
+        if not os.path.exists(CHAINDATA_DIR):
             # make chaindata dir
-            os.mkdir(chaindata_dir)
+            os.mkdir(CHAINDATA_DIR)
         index_string = str(self.index).zfill(6)  # front of zeros so they stay in numerical order
-        filename = '%s/%s.json' % (chaindata_dir, index_string)
+        filename = '%s/%s.json' % (CHAINDATA_DIR, index_string)
         with open(filename, 'w') as block_file:
             json.dump(self.to_dict(), block_file)
 
@@ -80,12 +78,11 @@ def create_first_block():
 
 if __name__ == '__main__':
     # check if chaindata folder exists.
-    chaindata_dir = 'chaindata/'
-    if not os.path.exists(chaindata_dir):
+    if not os.path.exists(CHAINDATA_DIR):
         # make chaindata dir
-        os.mkdir(chaindata_dir)
+        os.mkdir(CHAINDATA_DIR)
     # check if dir is empty from just creation, or empty before
-    if os.listdir(chaindata_dir) == []:
+    if os.listdir(CHAINDATA_DIR) == []:
         # create and save first block
         first_block = create_first_block()
         first_block.save()

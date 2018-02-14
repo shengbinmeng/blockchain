@@ -1,17 +1,10 @@
 from chain import Chain
 from block import Block, create_first_block
 from flask import Flask
-
 import json
 import datetime as date
-import hashlib
 import requests
 
-node = Flask(__name__)
-local_chain = Chain([])
-local_chain.load()
-
-NUM_ZEROS = 2
 PEERS = [
     'http://localhost:5000',
     'http://localhost:5001',
@@ -19,39 +12,23 @@ PEERS = [
     'http://localhost:5003',
 ]
 
-
-def generate_header(index, prev_hash, data, timestamp, nonce):
-    return str(index) + prev_hash + data + str(timestamp) + str(nonce)
-
-
-def calculate_hash(index, prev_hash, data, timestamp, nonce):
-    header_string = generate_header(index, prev_hash, data, timestamp, nonce)
-    sha = hashlib.sha256()
-    sha.update(header_string.encode())
-    return sha.hexdigest()
+node = Flask(__name__)
+local_chain = Chain([])
+local_chain.load()
 
 
 def mine_from(last_block):
-    index = int(last_block.index) + 1
-    timestamp = date.datetime.now()
-    data = "Block #%s" % (int(last_block.index) + 1)  # random string for now, not transactions
-    prev_hash = last_block.hash
-    nonce = 0
+    block_dict = {}
+    block_dict['index'] = last_block.index + 1
+    block_dict['prev_hash'] = last_block.hash
+    block_dict['timestamp'] = date.datetime.now()
+    block_dict['data'] = "Block #%s" % (last_block.index + 1)  # random string for now, not transactions
+    block_dict['nonce'] = 0
+    block = Block(block_dict)
 
-    block_hash = calculate_hash(index, prev_hash, data, timestamp, nonce)
-    while str(block_hash[0:NUM_ZEROS]) != '0' * NUM_ZEROS:
-        nonce += 1
-        block_hash = calculate_hash(index, prev_hash, data, timestamp, nonce)
-
-    # dictionary to create the new block object.
-    block_data = {}
-    block_data['index'] = index
-    block_data['prev_hash'] = last_block.hash
-    block_data['timestamp'] = timestamp
-    block_data['data'] = data
-    block_data['hash'] = block_hash
-    block_data['nonce'] = nonce
-    return Block(block_data)
+    while not block.is_valid():
+        block.nonce += 1
+    return block
 
 
 def sync_overall(peers, save=False):
@@ -114,6 +91,7 @@ def sync():
         response += " Local chain is not updated."
     return response
 
+
 # The index page for convenience.
 @node.route('/', methods=['GET'])
 def index():
@@ -121,6 +99,7 @@ def index():
                "<p><a href='/mine'>mine</a></p>" + \
                 "<p><a href='/sync'>sync</a></p>"
     return response, 200
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
