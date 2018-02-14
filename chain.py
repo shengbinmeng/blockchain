@@ -38,7 +38,7 @@ class Chain(object):
         # We're assuming that the folder and at least initial block exists
         chaindata_dir = 'chaindata'
         if os.path.exists(chaindata_dir):
-            for filename in os.listdir(chaindata_dir):
+            for filename in sorted(os.listdir(chaindata_dir)):
                 if filename.endswith('.json'):
                     filepath = '%s/%s' % (chaindata_dir, filename)
                     with open(filepath, 'r') as block_file:
